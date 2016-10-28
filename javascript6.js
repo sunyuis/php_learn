@@ -106,6 +106,230 @@ setTimeout(function () {
 }, 10000);
 
 
+事件参数
+有些事件，如mousemove和keypress，我们需要获取鼠标位置和按键的值，否则监听这些事件就没什么意义了。所有事件都会传入Event对象作为参数，可以从Event对象上获取到更多的信息：
+$(function () {
+    $('#testMouseMoveDiv').mousemove(function (e) {
+        $('#testMouseMoveSpan').text('pageX = ' + e.pageX + ', pageY = ' + e.pageY);
+    });
+});
+
+取消绑定
+
+一个已被绑定的事件可以解除绑定，通过off('click', function) 实现：
+
+function hello() {
+    alert('hello!');
+}
+
+a.click(hello); // 绑定事件
+
+// 10秒钟后解除绑定:
+setTimeout(function () {
+    a.off('click', hello);
+}, 10000);
+
+这是因为两个匿名函数虽然长得一模一样，但是它们是两个不同的函数对象，off('click', function () {...})无法移除已绑定的第一个匿名函数。
+为了实现移除效果，可以使用off('click')一次性移除已绑定的click事件的所有处理函数。
+同理，无参数调用off()一次性移除已绑定的所有类型的事件处理函数
+
+
+当用户在文本框中输入时，就会触发change事件。但是，如果用JavaScript代码去改动文本框的值，将不会触发change事件：
+var input = $('#test-input');
+input.val('change it!'); // 无法触发change事件
+
+input.change()相当于input.trigger('change')，它是trigger()方法的简写
+
+var button1 = $('#testPopupButton1');
+var button2 = $('#testPopupButton2');
+function popupTestWindow() {
+    window.open('/');
+}
+button1.click(function () {
+    popupTestWindow();
+});
+button2.click(function () {
+    // 不立刻执行popupTestWindow()，100毫秒后执行:
+    setTimeout(popupTestWindow, 100);
+});
+当用户点击button1时，click事件被触发，由于popupTestWindow()在click事件处理函数内执行，这是浏览器允许的，而button2的click事件并未立刻执行popupTestWindow()，延迟执行的popupTestWindow()将被浏览器拦截
+var div = $('#test-animate');
+div.animate({
+    opacity: 0.25,
+    width: '256px',
+    height: '256px'
+}, 3000); // 在3秒钟内CSS过渡到设定值
+
+jQuery的动画效果还可以串行执行，通过delay()方法还可以实现暂停，这样，我们可以实现更复杂的动画效果，而代码却相当简单：
+
+你可能会遇到，有的动画如slideUp()根本没有效果。这是因为jQuery动画的原理是逐渐改变CSS的值，如height从100px逐渐变为0。但是很多不是block性质的DOM元素，对它们设置height根本就不起作用，所以动画也就没有效果
+
+用JavaScript写AJAX前面已经介绍过了，主要问题就是不同浏览器需要写不同代码，并且状态和错误处理写起来很麻烦。
+用jQuery的相关对象来处理AJAX，不但不需要考虑浏览器问题，代码也能大大简化。
+
+ajax
+jQuery在全局对象jQuery（也就是$）绑定了ajax()函数，可以处理AJAX请求。ajax(url, settings)函数需要接收一个URL和一个可选的settings对象，常用的选项如下：
+async：是否异步执行AJAX请求，默认为true，千万不要指定为false；
+method：发送的Method，缺省为'GET'，可指定为'POST'、'PUT'等；
+contentType：发送POST请求的格式，默认值为'application/x-www-form-urlencoded; charset=UTF-8'，也可以指定为text/plain、application/json；
+data：发送的数据，可以是字符串、数组或object。如果是GET请求，data将被转换成query附加到URL上，如果是POST请求，根据contentType把data序列化成合适的格式；
+headers：发送的额外的HTTP头，必须是一个object；
+dataType：接收的数据格式，可以指定为'html'、'xml'、'json'、'text'等，缺省情况下根据响应的Content-Type猜测。
+
+var jqxhr = $.ajax('/api/categories', {
+    dataType: 'json'
+}).done(function (data) {
+    ajaxLog('成功, 收到的数据: ' + JSON.stringify(data));
+}).fail(function (xhr, status) {
+    ajaxLog('失败: ' + xhr.status + ', 原因: ' + status);
+}).always(function () {
+    ajaxLog('请求完成: 无论成功或失败都会调用');
+});
+对常用的AJAX操作，jQuery提供了一些辅助方法。由于GET请求最常见，所以jQuery提供了get()方法，可以这么写：
+var jqxhr = $.get('/path/to/resource', {
+    name: 'Bob Lee',
+    check: 1
+});
+
+post
+post()和get()类似，但是传入的第二个参数默认被序列化为application/x-www-form-urlencoded：
+var jqxhr = $.post('/path/to/resource', {
+    name: 'Bob Lee',
+    check: 1
+});
+
+getJSON
+由于JSON用得越来越普遍，所以jQuery也提供了getJSON()方法来快速通过GET获取一个JSON对象：
+var jqxhr = $.getJSON('/path/to/resource', {
+    name: 'Bob Lee',
+    check: 1
+}).done(function (data) {
+    // data已经被解析为JSON对象了
+});
+
+jQuery的AJAX完全封装的是JavaScript的AJAX操作，所以它的安全限制和前面讲的用JavaScript写AJAX完全一样。
+如果需要使用JSONP，可以在ajax()中设置jsonp: 'callback'，让jQuery实现JSONP跨域加载数据。
+
+
+答案是肯定的。我们可以扩展jQuery来实现自定义方法。将来如果要修改高亮的逻辑，只需修改一处扩展代码。这种方式也称为编写jQuery插件。
+$.fn.highlight1 = function () {
+    // this已绑定为当前jQuery对象:
+    this.css('backgroundColor', '#fffceb').css('color', '#d85030');
+    return this;
+}
+
+注意到函数内部的this在调用时被绑定为jQuery对象，所以函数内部代码可以正常调用所有jQuery对象的方法。
+
+细心的童鞋可能发现了，为什么最后要return this;？因为jQuery对象支持链式操作，我们自己写的扩展方法也要能继续链式下去：
+$('span.hl').highlight1().slideDown();
+
+
+紧接着用户对 highlight2()提出了意见：每次调用都需要传入自定义的设置，能不能让我自己设定一个缺省值，以后的调用统一使用无参数的 highlight2()？
+也就是说，我们设定的默认值应该能允许用户修改。
+那默认值放哪比较合适？放全局变量肯定不合适，最佳地点是 $.fn.highlight2 这个函数对象本身。
+于是最终版的highlight()终于诞生了：
+
+$.fn.highlight = function (options) {
+    // 合并默认值和用户设定值:
+    var opts = $.extend({}, $.fn.highlight.defaults, options);
+    this.css('backgroundColor', opts.backgroundColor).css('color', opts.color);
+    return this;
+}
+// 设定默认值:
+$.fn.highlight.defaults = {
+    color: '#d85030',
+    backgroundColor: '#fff8de'
+}
+
+
+最终，我们得出编写一个jQuery插件的原则：
+给$.fn绑定函数，实现插件的代码逻辑；
+插件函数最后要return this;以支持链式调用；
+插件函数要有默认值，绑定在 $.fn.<pluginName>.defaults上；
+用户在调用时可传入设定值以便覆盖默认值。
+
+针对特定元素的扩展
+我们知道jQuery对象的有些方法只能作用在特定DOM元素上，比如 submit() 方法只能针对form。如果我们编写的扩展只能针对某些类型的DOM元素，应该怎么写？
+还记得jQuery的选择器支持 filter()方法来过滤吗？我们可以借助这个方法来实现针对特定元素的扩展。
+
+$('#main a').external();
+然后按照上面的方法编写一个external扩展：
+$.fn.external = function () {
+    // return返回的each()返回结果，支持链式调用:
+    return this.filter('a').each(function () {
+        // 注意: each()内部的回调函数的this绑定为DOM本身!
+        var a = $(this);
+        var url = a.attr('href');
+        if (url && (url.indexOf('http://')===0 || url.indexOf('https://')===0)) {
+            a.attr('href', '#0')
+             .removeAttr('target')
+             .append(' <i class="uk-icon-external-link"></i>')
+             .click(function () {
+                if(confirm('你确定要前往' + url + '？')) {
+                    window.open(url);
+                }
+            });
+        }
+    });
+}
+
+
+正如jQuery统一了不同浏览器之间的DOM操作的差异，让我们可以简单地对DOM进行操作，underscore则提供了一套完善的函数式编程的接口，让我们更方便地在JavaScript中实现函数式编程。
+jQuery在加载时，会把自身绑定到唯一的全局变量$上，underscore与其类似，会把自身绑定到唯一的全局变量_上，这也是为啥它的名字叫underscore的原因
+
+map/filter
+和Array的map()与filter()类似，但是underscore的map()和filter()可以作用于Object。当作用于Object时，传入的函数为function (value, key)，第一个参数接收value，第二个参数接收key：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
